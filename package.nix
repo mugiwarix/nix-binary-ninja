@@ -17,6 +17,8 @@
   wayland,
   kdePackages,
   python3,
+  libxml2,
+  auto-patchelf,
 
   binaryNinjaEdition ? "personal",
   forceWayland ? false,
@@ -43,6 +45,7 @@ stdenv.mkDerivation {
   src = source;
   nativeBuildInputs = [
     makeWrapper
+    auto-patchelf
     autoPatchelfHook
     python3.pkgs.wrapPython
     kdePackages.wrapQtAppsHook
@@ -62,6 +65,7 @@ stdenv.mkDerivation {
     libxkbcommon
     dbus
     wayland
+    libxml2.out
   ];
   pythonDeps = [ python3.pkgs.pip ];
   appendRunpaths = [ "${lib.getLib python3}/lib" ];
@@ -82,6 +86,25 @@ stdenv.mkDerivation {
       categories = [ "Development" ];
     })
   ];
+
+  # libxml2 soname changes now follow ABI breaks.
+
+  # https://gitlab.gnome.org/GNOME/libxml2/-/issues/751
+
+  # This is of course ultimately good, but we can't recompile binja
+
+  # So let's just force it to use whatever NixOS has. It's Probably Fine™
+
+  preFixup = ''
+
+
+    patchelf $out/opt/binaryninja/plugins/lldb/lib/liblldb.so.* \
+
+
+      --replace-needed libxml2.so.2 libxml2.so
+
+
+  '';
 
   installPhase = ''
     runHook preInstall
